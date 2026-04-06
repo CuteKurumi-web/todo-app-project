@@ -6,53 +6,42 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 로컬 몽고DB 연결 (인터넷 차단 걱정 없음!)
-const MONGO_URI = "mongodb://127.0.0.1:27017/todoDB";
+// 환경변수(Vercel) 주소를 먼저 쓰고, 없으면 로컬 주소 사용
+const MONGO_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/todoDB";
 
 mongoose.connect(MONGO_URI)
-  .then(() => console.log('✅ MongoDB 연결 성공 (Local)'))
-  .catch(err => console.log('❌ 연결 실패:', err));
+  .then(() => console.log('✅ DB 연결 성공!'))
+  .catch(err => console.log('❌ DB 연결 에러:', err));
 
-// Todo 스키마 (제목 + 완료 여부)
-const todoSchema = new mongoose.Schema({
-  title: { type: String, required: true },
+const Todo = mongoose.model('Todo', new mongoose.Schema({
+  title: String,
   completed: { type: Boolean, default: false }
-});
-const Todo = mongoose.model('Todo', todoSchema);
+}));
 
-// API 1: 목록 가져오기
 app.get('/api/todos', async (req, res) => {
   const todos = await Todo.find();
   res.json(todos);
 });
 
-// API 2: 추가하기
 app.post('/api/todos', async (req, res) => {
   const newTodo = new Todo({ title: req.body.title });
   await newTodo.save();
   res.json(newTodo);
 });
 
-// API 3: 완료 체크 수정하기
 app.put('/api/todos/:id', async (req, res) => {
-  const todo = await Todo.findByIdAndUpdate(
-    req.params.id, 
-    { completed: req.body.completed }, 
-    { new: true }
-  );
+  const todo = await Todo.findByIdAndUpdate(req.params.id, { completed: req.body.completed }, { new: true });
   res.json(todo);
 });
 
-// API 4: 삭제하기
 app.delete('/api/todos/:id', async (req, res) => {
   await Todo.findByIdAndDelete(req.params.id);
   res.json({ message: '삭제 완료' });
 });
 
-app.listen(5000, () => console.log('🚀 백엔드 실행: http://localhost:5000'));
-
-// backend/index.js 맨 아래
+// Vercel 배포를 위한 설정
 if (process.env.NODE_ENV !== 'production') {
-  app.listen(5000, () => console.log('서버 실행 중'));
+  app.listen(5000, () => console.log('🚀 서버 실행 중'));
 }
-module.exports = app; // <--- 이 줄이 없으면 배포 버튼이 안 뜨거나 에러가 납니다!
+
+module.exports = app;
