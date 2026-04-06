@@ -50,3 +50,9 @@ app.delete('/api/todos/:id', async (req, res) => {
 });
 
 app.listen(5000, () => console.log('🚀 백엔드 실행: http://localhost:5000'));
+
+// backend/index.js 맨 아래
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(5000, () => console.log('서버 실행 중'));
+}
+module.exports = app; // <--- 이 줄이 없으면 배포 버튼이 안 뜨거나 에러가 납니다!
